@@ -163,7 +163,7 @@ export function createProgram(): Command {
 
         if (result.issues.length === 0) {
           console.log(`✓ Contract specification validation passed with 0 issues.`);
-          process.exit(0);
+          return;
         }
 
         for (const issue of result.issues) {
