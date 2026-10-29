@@ -34,10 +34,18 @@ node ./dist/index.js generate ./path/to/contract.wasm -f typescript -o ./src/con
 node ./dist/index.js generate ./path/to/contract.wasm -f json
 ```
 
-### 2. Generate OpenAPI 3.0 Schema
+### 3. Validate Contract Specification
 
 ```bash
-node ./dist/index.js openapi ./path/to/contract.wasm -o ./docs/openapi.json -t "Token Contract API"
+# Audit contract specification for missing docstrings and duplicate definitions
+sorodoc validate ./path/to/contract.wasm
+```
+
+### 4. Serve Generated Documentation
+
+```bash
+# Serve local documentation on http://127.0.0.1:8080 with path-traversal protection
+sorodoc serve ./docs --port 8080
 ```
 
 ## Testing & Quality
