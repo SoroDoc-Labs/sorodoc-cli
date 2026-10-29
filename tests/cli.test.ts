@@ -15,14 +15,16 @@ function encodeLeb128(n: number): Buffer {
 }
 
 function buildMockWasm(): Buffer {
-  // We'll write an empty contractspecv0 section
+  // A valid contractspecv0 section containing a function specification
+  const specBytes = Buffer.from([0,0,0,0,0,0,0,2,102,110,0,0,0,0,0,2,102,110,0,0,0,0,0,0,0,0,0,0]);
   const nameBuf = Buffer.from("contractspecv0");
   const secNameLen = encodeLeb128(nameBuf.length);
-  const secContent = Buffer.concat([secNameLen, nameBuf]);
+  const secContent = Buffer.concat([secNameLen, nameBuf, specBytes]);
   const secLen = encodeLeb128(secContent.length);
 
   return Buffer.concat([
-    Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x00]),
+    Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]),
+    Buffer.from([0x00]),
     secLen,
     secContent,
   ]);

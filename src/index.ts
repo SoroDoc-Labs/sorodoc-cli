@@ -7,6 +7,7 @@ import {
   generateOpenApi,
   generateTypeScript,
 } from "@sorodoc/sdk";
+import { startServer } from "./server.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -101,6 +102,39 @@ export function createProgram(): Command {
         }
       } catch (err) {
         console.error(`Error generating OpenAPI schema: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("serve <directory>")
+    .description("Serve generated documentation locally from a specified directory")
+    .option("-p, --port <port>", "Port to bind the server to (default: 8080)", "8080")
+    .option("-H, --host <host>", "Host interface to bind to (default: 127.0.0.1)", "127.0.0.1")
+    .action(async (directory: string, options: { port: string; host: string }) => {
+      try {
+        const portNumber = parseInt(options.port, 10);
+        if (isNaN(portNumber) || portNumber < 0 || portNumber > 65535) {
+          console.error(`Error: Invalid port number '${options.port}'`);
+          process.exit(1);
+        }
+
+        const { url, close } = await startServer(directory, {
+          port: portNumber,
+          host: options.host,
+        });
+
+        console.log(`SoroDoc documentation server running at ${url}`);
+        console.log(`Serving documentation from: ${path.resolve(process.cwd(), directory)}`);
+        console.log("Press Ctrl+C to terminate.");
+
+        process.on("SIGINT", async () => {
+          console.log("\nShutting down SoroDoc server...");
+          await close();
+          process.exit(0);
+        });
+      } catch (err) {
+        console.error(`Error starting documentation server: ${(err as Error).message}`);
         process.exit(1);
       }
     });
