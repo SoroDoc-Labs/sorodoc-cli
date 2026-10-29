@@ -6,6 +6,7 @@ import {
   generateMarkdown,
   generateOpenApi,
   generateTypeScript,
+  validateContractSpec,
 } from "@sorodoc/sdk";
 import { startServer } from "./server.js";
 
@@ -135,6 +136,49 @@ export function createProgram(): Command {
         });
       } catch (err) {
         console.error(`Error starting documentation server: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("validate <wasm>")
+    .description("Validate contract specification for missing docs, duplicate identifiers, and schema issues")
+    .action(async (wasmPath: string) => {
+      try {
+        const resolvedPath = path.resolve(process.cwd(), wasmPath);
+        if (!fs.existsSync(resolvedPath)) {
+          console.error(`Error: WASM file not found at '${resolvedPath}'`);
+          process.exit(1);
+        }
+
+        const wasmBuffer = fs.readFileSync(resolvedPath);
+        const ast = extractSpecFromWasm(wasmBuffer);
+        const result = validateContractSpec(ast);
+
+        console.log(`Contract Summary:`);
+        console.log(`- Functions: ${result.stats.functionCount} (${result.stats.documentedFunctions} documented)`);
+        console.log(`- Structs:   ${result.stats.structCount}`);
+        console.log(`- Enums:     ${result.stats.enumCount}`);
+        console.log(`- Unions:    ${result.stats.unionCount}\n`);
+
+        if (result.issues.length === 0) {
+          console.log(`✓ Contract specification validation passed with 0 issues.`);
+          process.exit(0);
+        }
+
+        for (const issue of result.issues) {
+          const prefix = issue.severity === "error" ? "✖ ERROR" : issue.severity === "warning" ? "⚠ WARN" : "ℹ INFO";
+          console.log(`[${prefix}] [${issue.entityType}] ${issue.entityName}: ${issue.message}`);
+        }
+
+        if (!result.valid) {
+          console.error(`\nValidation failed with errors.`);
+          process.exit(1);
+        } else {
+          console.log(`\nValidation completed successfully.`);
+        }
+      } catch (err) {
+        console.error(`Error validating contract specification: ${(err as Error).message}`);
         process.exit(1);
       }
     });
