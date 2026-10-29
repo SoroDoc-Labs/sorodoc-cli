@@ -1,0 +1,38 @@
+{
+  "name": "sorodoc-cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for the SoroDoc Soroban documentation ecosystem",
+  "bin": {
+    "sorodoc": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "stellar",
+    "soroban",
+    "cli",
+    "documentation",
+    "wasm"
+  ],
+  "author": "SoroDoc Contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@sorodoc/sdk": "file:../sorodoc-sdk",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
