@@ -105,4 +105,51 @@ describe("CLI Commands", () => {
 
     fs.unlinkSync(openapiOut);
   });
+
+  describe("Real-world compiled Soroban WASM artifacts", () => {
+    const fixturesDir = path.resolve(__dirname, "../../sorodoc-sdk/fixtures");
+    const incrementWasm = path.join(fixturesDir, "increment.wasm");
+    const customTypesWasm = path.join(fixturesDir, "custom_types.wasm");
+    const errorsWasm = path.join(fixturesDir, "errors.wasm");
+
+    it("generates markdown, typescript, and json for real increment.wasm", async () => {
+      if (!fs.existsSync(incrementWasm)) return;
+
+      const program = createProgram();
+      program.exitOverride();
+
+      const outMd = path.join(__dirname, "increment_out.md");
+      const outTs = path.join(__dirname, "increment_out.ts");
+      const outJson = path.join(__dirname, "increment_out.json");
+
+      await program.parseAsync(["node", "sorodoc", "generate", incrementWasm, "-f", "markdown", "-o", outMd]);
+      await program.parseAsync(["node", "sorodoc", "generate", incrementWasm, "-f", "typescript", "-o", outTs]);
+      await program.parseAsync(["node", "sorodoc", "generate", incrementWasm, "-f", "json", "-o", outJson]);
+
+      expect(fs.readFileSync(outMd, "utf8")).toContain("increment");
+      expect(fs.readFileSync(outTs, "utf8")).toContain("incrementClient");
+      const jsonSpec = JSON.parse(fs.readFileSync(outJson, "utf8"));
+      expect(jsonSpec.functions.length).toBeGreaterThan(0);
+
+      fs.unlinkSync(outMd);
+      fs.unlinkSync(outTs);
+      fs.unlinkSync(outJson);
+    });
+
+    it("validates real custom_types.wasm and errors.wasm with CLI validate", async () => {
+      if (!fs.existsSync(customTypesWasm) || !fs.existsSync(errorsWasm)) return;
+
+      const program = createProgram();
+      program.exitOverride();
+
+      // Should run without exiting process or throwing
+      await expect(
+        program.parseAsync(["node", "sorodoc", "validate", customTypesWasm])
+      ).resolves.not.toThrow();
+
+      await expect(
+        program.parseAsync(["node", "sorodoc", "validate", errorsWasm])
+      ).resolves.not.toThrow();
+    });
+  });
 });

@@ -64,7 +64,22 @@ export function startServer(
       const safeRelativePath = path.posix.normalize("/" + reqUrlPath).replace(/^(\.\.[\/\\])+/, "");
       let resolvedFilePath = path.join(rootDir, safeRelativePath);
 
-      // Verify the resolved path is strictly within rootDir
+      // Verify the resolved path is strictly within rootDir using realpath when available
+      try {
+        const canonicalRootDir = fs.realpathSync(rootDir);
+        if (fs.existsSync(resolvedFilePath)) {
+          const canonicalTarget = fs.realpathSync(resolvedFilePath);
+          const relativeReal = path.relative(canonicalRootDir, canonicalTarget);
+          if (relativeReal.startsWith("..") || path.isAbsolute(relativeReal)) {
+            res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+            res.end("Forbidden: Access Denied");
+            return;
+          }
+        }
+      } catch {
+        // Fall back to path-relative check if realpath fails
+      }
+
       const relative = path.relative(rootDir, resolvedFilePath);
       if (relative.startsWith("..") || path.isAbsolute(relative)) {
         res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
