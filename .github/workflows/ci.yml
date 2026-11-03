@@ -17,12 +17,14 @@ jobs:
     steps:
       - name: Checkout CLI repository
         uses: actions/checkout@v4
+        with:
+          path: sorodoc-cli
 
       - name: Checkout SDK repository
         uses: actions/checkout@v4
         with:
           repository: SoroDoc-Labs/sorodoc-sdk
-          path: ../sorodoc-sdk
+          path: sorodoc-sdk
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -31,18 +33,26 @@ jobs:
 
       - name: Build SDK
         run: |
-          cd ../sorodoc-sdk
+          cd sorodoc-sdk
           npm ci
           npm run build
 
       - name: Install CLI dependencies
-        run: npm ci
+        run: |
+          cd sorodoc-cli
+          npm ci
 
       - name: Run CLI TypeScript typecheck
-        run: npm run typecheck
+        run: |
+          cd sorodoc-cli
+          npm run typecheck
 
       - name: Run CLI Vitest test suite
-        run: npm run test
+        run: |
+          cd sorodoc-cli
+          npm run test
 
       - name: Run CLI package build
-        run: npm run build
+        run: |
+          cd sorodoc-cli
+          npm run build
