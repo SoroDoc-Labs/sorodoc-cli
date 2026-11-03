@@ -65,6 +65,15 @@ describe("CLI Static Documentation Server (Security & Path Traversal)", () => {
     const res2 = await get(`${serverInstance.url}/%2e%2e%2fpackage.json`);
     expect([403, 404]).toContain(res2.statusCode);
     expect(res2.body).not.toContain('"name": "sorodoc-cli"');
+
+    // Double encoded traversal (%252e%252e)
+    const res3 = await get(`${serverInstance.url}/%252e%252e%252fpackage.json`);
+    expect([400, 403, 404]).toContain(res3.statusCode);
+    expect(res3.body).not.toContain('"name": "sorodoc-cli"');
+
+    // Null-byte injection (%00)
+    const res4 = await get(`${serverInstance.url}/spec.md%00.html`);
+    expect([400, 403, 404]).toContain(res4.statusCode);
   });
 
   it("rejects non-directory root path gracefully", async () => {

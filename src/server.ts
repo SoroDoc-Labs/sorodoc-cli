@@ -52,11 +52,35 @@ export function startServer(
       }
 
       let reqUrlPath = req.url || "/";
+
+      // Security: Null-byte injection check
+      if (reqUrlPath.includes("\0") || reqUrlPath.includes("%00")) {
+        res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Bad Request: Null Byte Detected");
+        return;
+      }
+
+      // Security: Recursive URL decode to prevent multi-level / double-encoded traversal (%252e%252e)
       try {
-        reqUrlPath = decodeURIComponent(reqUrlPath.split("?")[0] || "/");
+        let prev = "";
+        let decoded = reqUrlPath.split("?")[0] || "/";
+        let iterations = 0;
+        while (decoded !== prev && iterations < 3) {
+          prev = decoded;
+          decoded = decodeURIComponent(decoded);
+          iterations++;
+        }
+        reqUrlPath = decoded;
       } catch {
         res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("Bad Request: Malformed URL");
+        return;
+      }
+
+      // Final check for null bytes after full decoding
+      if (reqUrlPath.includes("\0")) {
+        res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Bad Request: Null Byte Detected");
         return;
       }
 
