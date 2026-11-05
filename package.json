@@ -31,7 +31,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@sorodoc/sdk": "file:../sorodoc-sdk",
+    "@sorodoc/sdk": "0.1.0",
     "commander": "^12.1.0"
   },
   "devDependencies": {
