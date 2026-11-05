@@ -16,12 +16,12 @@ jobs:
 
     steps:
       - name: Checkout CLI repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: sorodoc-cli
 
       - name: Checkout SDK repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: SoroDoc-Labs/sorodoc-sdk
           path: sorodoc-sdk
