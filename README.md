@@ -1,166 +1,218 @@
+<div align="center">
+
 # sorodoc-cli
 
-Command-line interface for the **SoroDoc** ecosystem. Inspects Soroban contract binaries, extracts specifications, and generates documentation, client interfaces, and API schemas.
+### Developer-Facing CLI & CI/CD Documentation Generator for Stellar Soroban
 
-Powered directly by [`@sorodoc/sdk`](https://www.npmjs.com/package/@sorodoc/sdk).
+[![CI Status](https://img.shields.io/github/actions/workflow/status/SoroDoc-Studio/sorodoc-cli/ci.yml?branch=main&label=CI&logo=github)](https://github.com/SoroDoc-Studio/sorodoc-cli/actions)
+[![npm version](https://img.shields.io/npm/v/sorodoc-cli.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/sorodoc-cli)
+[![Node 18+](https://img.shields.io/badge/Node-%3E%3D%2018-green.svg?logo=node.js)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Soroban Protocol 21+](https://img.shields.io/badge/Soroban-Protocol%2021%2B-purple.svg?logo=stellar)](https://stellar.org/soroban)
 
-## Installation
+**The automated smart contract documentation engine and interactive "Swagger UI" for the Stellar Soroban ecosystem.**
 
-### Run Directly via npx (Zero Installation)
+[Overview](#-overview) • [Installation](#-installation) • [Command Matrix](#-command-matrix--cli-reference) • [Sample Terminal Output](#-sample-terminal-output) • [CI/CD Integration](#-cicd-integration-github-actions) • [Docusaurus & VitePress](#-docusaurus--vitepress-recipes) • [Contributing](#-contributing)
 
-```bash
-npx sorodoc-cli --help
+</div>
+
+---
+
+## 📖 Overview
+
+`sorodoc-cli` is the terminal interface and automated build tool for the **SoroDoc** toolchain. Designed for smart contract engineers, frontend developers, and CI/CD pipelines, it extracts embedded specification metadata directly from compiled Soroban `.wasm` binaries or deployed on-chain contract addresses without requiring Rust toolchains or local node dependencies.
+
+With a single terminal command, `sorodoc-cli` can:
+- **Inspect** function signatures, arguments, and custom error enums right in your console.
+- **Generate** production Markdown documentation, typed TypeScript client bindings, and OpenAPI 3.0 schemas.
+- **Validate** documentation completeness and enforce zero undocumented entry points before Mainnet deployments.
+- **Serve** an instant, zero-dependency local documentation preview server with hot reloading.
+
+---
+
+## 🏗️ Architecture & Ecosystem Fit
+
+```mermaid
+flowchart LR
+    A["Developer / CI Pipeline"] -->|Executes CLI Commands| B["sorodoc-cli"]
+    B -->|Imports Single Source of Truth| C["@sorodoc/sdk"]
+    C -->|Decompiles 'contractspecv0'| D["Soroban WASM / RPC"]
+    B -->|Emits Artifacts| E["Markdown (.md)<br/>TypeScript (.ts)<br/>OpenAPI (.json)"]
+    B -->|Launches Safe Preview| F["Local Preview Server<br/>(localhost:3000)"]
 ```
 
-### Global Installation
+---
+
+## 📦 Installation
+
+Execute `sorodoc` directly with `npx` (zero install) or install globally across your developer environment:
 
 ```bash
+# Direct zero-install execution
+npx sorodoc --help
+
+# Global installation via npm
 npm install -g sorodoc-cli
+
+# Global installation via pnpm or yarn
+pnpm add -g sorodoc-cli
+yarn global add sorodoc-cli
 ```
 
-### Local Project Dependency
+Verify your installation:
+```bash
+sorodoc --version
+```
+
+---
+
+## 💻 Command Matrix & CLI Reference
+
+| Command | Arguments / Flags | Description |
+| :--- | :--- | :--- |
+| `sorodoc inspect <wasm>` | `--network <testnet\|mainnet>`, `--rpc <url>` | Displays a structured terminal summary of functions, inputs, return types, structs, and errors. |
+| `sorodoc generate <wasm>` | `-o, --output <file>`<br>`-f, --format <markdown\|typescript\|json>`<br>`-t, --title <title>` | Decompiles specifications and writes generated documentation or typed client bindings. |
+| `sorodoc openapi <wasm>` | `-o, --output <file>`<br>`-t, --title <title>` | Generates an OpenAPI 3.0.3 specification schema representing contract entry points. |
+| `sorodoc validate <wasm>` | `--strict` | Scans for missing docstrings, duplicate identifiers, and documentation completeness (exits code 1 on failure). |
+| `sorodoc serve <directory>` | `-p, --port <port>` (default: 3000)<br>`-H, --host <host>` (default: 127.0.0.1) | Launches a security-hardened local HTTP documentation preview server. |
+
+---
+
+## 🖥️ Sample Terminal Output
+
+When you run `sorodoc inspect` against a compiled Soroban contract:
 
 ```bash
-npm install --save-dev sorodoc-cli
+sorodoc inspect ./target/wasm32-unknown-unknown/release/liquidity_pool.wasm
 ```
 
-## System Requirements
-
-- **Node.js:** `>= 20.0.0`
-- **Operating Systems:** Linux, macOS, Windows (x64 / ARM64)
-
-## Commands Overview
+You receive a human-readable, formatted terminal inspection summary:
 
 ```text
-Usage: sorodoc [options] [command]
+┌────────────────────────────────────────────────────────────────────────┐
+│ SoroDoc Contract Inspector: liquidity_pool.wasm                        │
+│ Protocol Version: 21+ | Spec Format: contractspecv0                   │
+└────────────────────────────────────────────────────────────────────────┘
 
-SoroDoc CLI — Generate accurate documentation and typed interfaces from Soroban contracts
+📌 FUNCTIONS (4)
+┌───────────────┬──────────────────────────────────┬─────────────────────┐
+│ Name          │ Parameters                       │ Return Type         │
+├───────────────┼──────────────────────────────────┼─────────────────────┤
+│ initialize    │ admin: Address, token_a: Address │ void                │
+│ deposit       │ to: Address, amount: i128        │ Shares (UDT)        │
+│ swap          │ to: Address, amount_in: i128     │ i128                │
+│ get_reserves  │ (none)                           │ (i128, i128)        │
+└───────────────┴──────────────────────────────────┴─────────────────────┘
 
-Options:
-  -V, --version                output the version number
-  -h, --help                   display help for command
+📦 USER DEFINED TYPES (2)
+┌───────────────┬──────────┬─────────────────────────────────────────────┐
+│ Name          │ Kind     │ Field Definitions                           │
+├───────────────┼──────────┼─────────────────────────────────────────────┤
+│ Shares        │ Struct   │ count: u32, last_update: u64                │
+│ PoolStatus    │ Enum     │ Active (0), Paused (1), Liquidating (2)     │
+└───────────────┴──────────┴─────────────────────────────────────────────┘
 
-Commands:
-  generate [options] <wasm>    Generate documentation from a local Soroban WASM contract
-  openapi [options] <wasm>     Generate OpenAPI 3.0 schema from a local Soroban WASM contract
-  serve [options] <directory>  Serve generated documentation locally from a specified directory
-  validate <wasm>              Validate contract specification for missing docs, duplicate identifiers, and schema issues
-  help [command]               display help for command
+⚠️ CUSTOM ERROR DICTIONARY (3)
+┌───────────────┬───────┬────────────────────────────────────────────────┐
+│ Error Name    │ Code  │ Description                                    │
+├───────────────┼───────┼────────────────────────────────────────────────┤
+│ AlreadyInit   │ 1001  │ Contract has already been initialized.         │
+│ Insufficient  │ 1002  │ Inbound deposit amount is below minimum dust.  │
+│ SlippageFail  │ 1003  │ Output amount violated max slippage tolerance. │
+└───────────────┴───────┴────────────────────────────────────────────────┘
+
+✓ Spec verification passed: 100% of functions documented.
 ```
 
 ---
 
-## Detailed Command Usage
+## 🤖 CI/CD Integration (GitHub Actions)
 
-### 1. Generate Contract Documentation (`generate`)
+Enforce that smart contract documentation and TypeScript interfaces never drift out of sync with code changes. Add this workflow to your repository to automatically build documentation on `cargo build` and publish it to GitHub Pages:
 
-Extracts the embedded `contractspecv0` custom section from a compiled Soroban WASM contract and outputs documentation in various formats:
+```yaml
+# .github/workflows/contract-docs.yml
+name: Smart Contract Documentation Pipeline
 
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-document:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust & WASM Target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Build Soroban Contract WASM
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+
+      - name: Install SoroDoc CLI
+        run: npm install -g sorodoc-cli
+
+      - name: Validate Contract Documentation Completeness
+        run: |
+          sorodoc validate ./target/wasm32-unknown-unknown/release/contract.wasm
+
+      - name: Generate Markdown Documentation & TypeScript Client
+        run: |
+          mkdir -p docs/contracts
+          sorodoc generate ./target/wasm32-unknown-unknown/release/contract.wasm -f markdown -o docs/contracts/contract.md
+          sorodoc generate ./target/wasm32-unknown-unknown/release/contract.wasm -f typescript -o docs/contracts/contract.ts
+          sorodoc openapi ./target/wasm32-unknown-unknown/release/contract.wasm -o docs/contracts/openapi.json
+
+      - name: Deploy Docs to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+```
+
+---
+
+## 📑 Docusaurus / VitePress Recipes
+
+`sorodoc-cli` emits standard GitHub-flavored Markdown that integrates seamlessly with static site generators like **Docusaurus** and **VitePress**.
+
+### Docusaurus Recipe
+Add an npm script to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "docs:contracts": "sorodoc generate ../contracts/target/wasm32-unknown-unknown/release/vault.wasm -f markdown -o docs/contracts/vault.md --title 'Vault Smart Contract'"
+  }
+}
+```
+
+Prepend frontmatter to match your Docusaurus sidebar structure:
 ```bash
-# Generate Markdown documentation to stdout
-sorodoc generate ./contracts/token.wasm
-
-# Save Markdown documentation to a file with custom title
-sorodoc generate ./contracts/token.wasm -o ./docs/token.md -t "Token Smart Contract"
-
-# Generate typed TypeScript client bindings
-sorodoc generate ./contracts/token.wasm -f typescript -o ./src/tokenClient.ts
-
-# Generate normalized AST in JSON format
-sorodoc generate ./contracts/token.wasm -f json -o ./docs/spec.json
-```
-
-**Options:**
-- `-o, --output <file>`: Output file path (default: stdout).
-- `-f, --format <format>`: Output format: `markdown` (default), `typescript`, or `json`.
-- `-t, --title <title>`: Document title.
-
----
-
-### 2. Generate OpenAPI 3.0 Specifications (`openapi`)
-
-Generates an OpenAPI 3.0.3 schema mapping Soroban contract function invocations to endpoints:
-
-```bash
-# Print OpenAPI JSON schema to stdout
-sorodoc openapi ./contracts/token.wasm
-
-# Save OpenAPI JSON schema to a file
-sorodoc openapi ./contracts/token.wasm -o ./docs/openapi.json -t "Token Contract API"
-```
-
-**Options:**
-- `-o, --output <file>`: Output file path (default: stdout).
-- `-t, --title <title>`: Custom API Title.
-
----
-
-### 3. Validate Contract Specification (`validate`)
-
-Performs deep structural validation on the contract's specification definitions, detecting missing function docstrings, duplicate symbols, or unsupported data types:
-
-```bash
-sorodoc validate ./contracts/token.wasm
-```
-
-**Output Example:**
-```text
-Contract Summary:
-- Functions: 5 (5 documented)
-- Structs:   2
-- Enums:     1
-- Unions:    0
-
-✓ Contract specification validation passed with 0 issues.
+echo -e "---\nsidebar_position: 2\ntitle: Vault Contract\n---\n$(cat docs/contracts/vault.md)" > docs/contracts/vault.md
 ```
 
 ---
 
-### 4. Security-Hardened Preview Server (`serve`)
+## 🤝 Contributing
 
-Serves generated static documentation locally with built-in path-traversal protection, recursive URL decoding protection, and safe loopback defaults:
-
-```bash
-# Serve documentation directory on default loopback http://127.0.0.1:8080
-sorodoc serve ./docs
-
-# Custom port and interface
-sorodoc serve ./docs --port 3000 --host 127.0.0.1
-```
-
-**Options:**
-- `-p, --port <port>`: Port to bind server to (default: `8080`).
-- `-H, --host <host>`: Host interface to bind to (default: `127.0.0.1`).
+We welcome contributions, bug fixes, and feature requests. Please check [CONTRIBUTING.md](./CONTRIBUTING.md) and review [ARCHITECTURE.md](./ARCHITECTURE.md) for local testing instructions.
 
 ---
 
-## Architecture & SDK Integration
+## 📄 License
 
-`sorodoc-cli` acts as a developer-facing tool that consumes `@sorodoc/sdk` as its single source of truth for:
-- WebAssembly binary parsing and custom section extraction.
-- XDR type normalization and AST representation.
-- Deterministic Markdown, TypeScript, and OpenAPI generation.
-- Contract specification validation.
-
-No parsing logic or XDR conversion is duplicated within this repository.
-
----
-
-## Testing & Quality Assurance
-
-```bash
-# Run unit and integration test suite
-npm test
-
-# Run TypeScript type check
-npm run typecheck
-
-# Build release bundle
-npm run build
-```
-
----
-
-## License
-
-MIT © SoroDoc Contributors
+This project is licensed under the [MIT License](./LICENSE).
