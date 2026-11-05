@@ -63,6 +63,10 @@ export function createProgram(): Command {
 
         if (options.output) {
           const outputPath = path.resolve(process.cwd(), options.output);
+          const outputDir = path.dirname(outputPath);
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+          }
           fs.writeFileSync(outputPath, outputContent, "utf8");
           console.log(`Documentation successfully written to ${outputPath}`);
         } else {
@@ -96,6 +100,10 @@ export function createProgram(): Command {
 
         if (options.output) {
           const outputPath = path.resolve(process.cwd(), options.output);
+          const outputDir = path.dirname(outputPath);
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+          }
           fs.writeFileSync(outputPath, jsonContent, "utf8");
           console.log(`OpenAPI schema successfully written to ${outputPath}`);
         } else {
