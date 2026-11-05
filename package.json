@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Command-line interface for the SoroDoc Soroban documentation ecosystem",
   "bin": {
-    "sorodoc": "./dist/index.js"
+    "sorodoc": "dist/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
